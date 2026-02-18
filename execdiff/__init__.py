@@ -116,13 +116,15 @@ def stop_action_trace():
 
 def _persist_action_log(diff):
     """
-    Persist the action trace diff to .execdiff/logs/actions.jsonl in the workspace.
+    Persist the action trace diff to global logs directory.
+    Uses EXECDIFF_LOG_DIR env var, or defaults to ~/.execdiff/logs/
     """
-    log_dir = os.path.join(_workspace, ".execdiff", "logs")
-    log_file = os.path.join(log_dir, "actions.jsonl")
+    # Get log directory from env or use home directory
+    log_base = os.environ.get('EXECDIFF_LOG_DIR') or os.path.expanduser('~/.execdiff/logs')
+    log_file = os.path.join(log_base, "actions.jsonl")
 
     try:
-        os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(log_base, exist_ok=True)
     except Exception:
         return
 
@@ -299,11 +301,13 @@ def _take_snapshot():
 
 def last_action_summary(workspace="."):
     """
-    Read the latest action trace from .execdiff/logs/actions.jsonl and return a human-readable summary.
+    Read the latest action trace from global logs and return a human-readable summary.
+    Uses EXECDIFF_LOG_DIR env var, or defaults to ~/.execdiff/logs/
     Returns:
         str: Human-readable summary of the last AI action, or a message if no log exists.
     """
-    log_file = os.path.join(workspace, ".execdiff", "logs", "actions.jsonl")
+    log_base = os.environ.get('EXECDIFF_LOG_DIR') or os.path.expanduser('~/.execdiff/logs')
+    log_file = os.path.join(log_base, "actions.jsonl")
     
     if not os.path.exists(log_file):
         return "No action history found."
