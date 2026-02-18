@@ -1,0 +1,1 @@
+{"timestamp": "2026-02-18T18:33:22.403985", "workspace": "/Users/anup-admin/source_code/ExecDiff/execdiff", "diff": {"files": {"created": [{"path": "test_data.json", "mtime": 1771439602.398208, "size": 16}, {"path": "test_output.txt", "mtime": 1771439602.3979912, "size": 12}], "modified": [], "deleted": []}, "packages": {"installed": [], "removed": [], "upgraded": []}}}
