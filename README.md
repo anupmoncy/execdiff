@@ -1,72 +1,102 @@
-# execdiff
-Track what changes when AI-generated code runs
+# ExecDiff
 
-## Features
-- Trace file system changes (created, modified, deleted files)
-- Detect newly installed Python packages
-- Track changes only within a specified workspace directory
-- Execution window: only changes made during the traced execution are reported
-- Simple API, no classes
+See what AI-generated code will change before running it.
 
-## API Usage
+---
 
-### Basic Tracing
-```python
-import execdiff
+## Problem
 
-execdiff.start_trace(workspace=".")
-# ... your code that makes changes ...
-diff = execdiff.stop_trace()
-print(diff)
+AI coding tools and agents today can:
+
+- install dependencies  
+- create files  
+- modify configs  
+- run migrations  
+- delete project files  
+
+All automatically.
+
+When something breaks after execution, tools cannot answer:
+
+> What exactly changed because of this action?
+
+Git tracks source code changes —  
+but it does **not** track execution side effects like:
+
+- newly installed Python packages  
+- runtime-created files  
+- deleted files  
+- modified configs  
+
+So tools often fall back to:
+
+> regenerate and try again
+
+---
+
+## Solution
+
+ExecDiff allows tools to run AI-generated code and observe:
+
+> what changed in the workspace because of that execution
+
+It detects:
+
+- files created  
+- files modified  
+- files deleted  
+- Python packages installed  
+
+inside a specific workspace  
+during a specific execution window.
+
+---
+
+## Installation
+
+```bash
+pip install execdiff
 ```
 
-### Trace a Subprocess Command
+---
+
+## Example
+
+Create a test script:
+
 ```python
 import execdiff
 import json
+import os
 
-diff = execdiff.run_traced(["touch", "example.txt"])
+os.makedirs("workspace", exist_ok=True)
+
+diff = execdiff.run_traced(
+    "touch workspace/test.txt",
+    workspace="workspace"
+)
+
 print(json.dumps(diff, indent=2))
 ```
 
-### Diff Output Structure
-The result is a dictionary with:
-- `files`: created, modified, and deleted files (with mtimes, only those changed during execution)
-- `packages`: newly installed Python packages (name and version)
+Run:
 
-Example:
+```bash
+python test.py
+```
+
+---
+
+## Output
+
 ```json
 {
   "files": {
-    "created": [ {"path": "example.txt", "mtime": 1234567890.0} ],
-    "modified": [],
-    "deleted": []
-  },
-  "packages": {
-    "installed": [ {"name": "requests", "version": "2.32.0"} ]
-  }
-}
-```
-
-## Installation
-This package is self-contained and requires only Python 3. No external dependencies are needed for core tracing features. For package detection, ensure `pip` is available in your environment.
-
-Clone the repository and use the code directly, or copy `execdiff/` into your project.
-
-## Running the Test
-To verify the MVP end-to-end:
-
-```bash
-python3 test.py
-```
-
-You should see output like:
-
-```
-{
-  "files": {
     "created": [
-      {"path": "test_workspace/ai_created.txt", "mtime": ...}
+      {
+        "path": "workspace/test.txt",
+        "mtime": 1700000000.0
+      }
     ],
     "modified": [],
     "deleted": []
@@ -77,9 +107,61 @@ You should see output like:
 }
 ```
 
-## Contributing
-- Please open issues or pull requests for bugs, ideas, or improvements.
-- Keep the implementation simple and function-based (no classes).
+---
+
+## Package Install Detection Example
+
+```python
+import execdiff
+import json
+import os
+
+os.makedirs("workspace", exist_ok=True)
+
+diff = execdiff.run_traced(
+    "pip install requests",
+    workspace="workspace"
+)
+
+print(json.dumps(diff, indent=2))
+```
+
+---
+
+## Output
+
+```json
+{
+  "files": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "packages": {
+    "installed": [
+      {
+        "name": "requests",
+        "version": "2.32.0"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Use Cases
+
+ExecDiff can help AI coding tools:
+
+- preview changes before applying generated code  
+- detect unintended file or dependency changes  
+- explain execution impact to users  
+- debug failed automation  
+- build undo / rollback systems  
+
+---
 
 ## License
+
 MIT
