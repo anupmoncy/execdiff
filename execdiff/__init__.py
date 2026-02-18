@@ -1,3 +1,141 @@
+import sysconfig
+import re
+import json
+from datetime import datetime
+
+# --- Full Workspace Metadata Snapshot and Action Trace ---
+_action_trace_before = None
+
+def snapshot_workspace_state(workspace):
+    """
+    Take a full snapshot of the workspace state: files (mtime, size) and installed packages (name, version).
+    Returns:
+        dict: {"files": {relpath: {"mtime": float, "size": int}}, "packages": {name: {"version": str}}}
+    """
+    # File snapshot
+    files = {}
+    for root, dirs, filelist in os.walk(workspace):
+        for fname in filelist:
+            fpath = os.path.join(root, fname)
+            relpath = os.path.relpath(fpath, workspace)
+            try:
+                files[relpath] = {
+                    "mtime": os.path.getmtime(fpath),
+                    "size": os.path.getsize(fpath)
+                }
+            except (OSError, IOError):
+                pass
+
+    # Package snapshot
+    packages = {}
+    site_packages = sysconfig.get_paths()["purelib"]
+    dist_info_re = re.compile(r"^(?P<name>.+?)-(?P<version>[^-]+)\.dist-info$")
+    try:
+        for entry in os.listdir(site_packages):
+            m = dist_info_re.match(entry)
+            if m:
+                name = m.group("name").replace('_', '-')
+                version = m.group("version")
+                packages[name.lower()] = {"version": version}
+    except Exception:
+        pass
+
+    return {"files": files, "packages": packages}
+
+
+def start_action_trace(workspace="."):
+    """
+    Take and store a full workspace metadata snapshot for later diffing.
+    """
+    global _action_trace_before, _workspace
+    _workspace = workspace
+    _action_trace_before = snapshot_workspace_state(workspace)
+
+
+def stop_action_trace():
+    """
+    Take a new snapshot and compute diff (files: created/modified/deleted, packages: installed/removed/upgraded).
+    Returns:
+        dict: {"files": {...}, "packages": {...}}
+    """
+    global _action_trace_before, _workspace
+    if _action_trace_before is None:
+        raise RuntimeError("start_action_trace() must be called before stop_action_trace()")
+    after = snapshot_workspace_state(_workspace)
+    before = _action_trace_before
+
+    # File diffs
+    before_files = before["files"]
+    after_files = after["files"]
+    created = []
+    modified = []
+    deleted = []
+    for f in after_files:
+        if f not in before_files:
+            created.append({"path": f, **after_files[f]})
+        else:
+            b, a = before_files[f], after_files[f]
+            if b["mtime"] != a["mtime"] or b["size"] != a["size"]:
+                modified.append({"path": f, "before_mtime": b["mtime"], "after_mtime": a["mtime"], "before_size": b["size"], "after_size": a["size"]})
+    for f in before_files:
+        if f not in after_files:
+            deleted.append({"path": f, **before_files[f]})
+
+    # Package diffs
+    before_pkgs = before["packages"]
+    after_pkgs = after["packages"]
+    installed = []
+    removed = []
+    upgraded = []
+    for name in after_pkgs:
+        if name not in before_pkgs:
+            installed.append({"name": name, "version": after_pkgs[name]["version"]})
+        else:
+            if before_pkgs[name]["version"] != after_pkgs[name]["version"]:
+                upgraded.append({"name": name, "before_version": before_pkgs[name]["version"], "after_version": after_pkgs[name]["version"]})
+    for name in before_pkgs:
+        if name not in after_pkgs:
+            removed.append({"name": name, "version": before_pkgs[name]["version"]})
+
+    diff = {
+        "files": {
+            "created": created,
+            "modified": modified,
+            "deleted": deleted
+        },
+        "packages": {
+            "installed": installed,
+            "removed": removed,
+            "upgraded": upgraded
+        }
+    }
+
+    _persist_action_log(diff)
+    return diff
+
+
+def _persist_action_log(diff):
+    """
+    Persist the action trace diff to .execdiff/logs/actions.jsonl in the workspace.
+    """
+    log_dir = os.path.join(_workspace, ".execdiff", "logs")
+    log_file = os.path.join(log_dir, "actions.jsonl")
+
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+    except Exception:
+        return
+
+    try:
+        entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "workspace": os.path.abspath(_workspace),
+            "diff": diff
+        }
+        with open(log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
 """Minimal passive execution tracing library for file system snapshots."""
 
 import os
