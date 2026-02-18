@@ -267,6 +267,88 @@ python3 test_packages.py
 
 ---
 
+## Test Scenario 4: Human-Readable Action Summary
+
+### Test the Summary Function
+Create `test_summary.py`:
+
+```python
+import execdiff
+import json
+import os
+
+# Start trace
+execdiff.start_action_trace(workspace=".")
+
+# Create and modify some files
+with open("output.txt", "w") as f:
+    f.write("Generated output\n")
+
+with open("config.yaml", "w") as f:
+    f.write("config: value\n")
+
+# Stop trace
+diff = execdiff.stop_action_trace()
+
+# Get human-readable summary
+summary = execdiff.last_action_summary(workspace=".")
+print(summary)
+```
+
+### Run Summary Test
+```bash
+python3 test_summary.py
+```
+
+### Expected Output
+```
+Last AI Action:
+
+Created:
+- config.yaml
+- output.txt
+```
+
+### Test with Multiple Actions
+```python
+import execdiff
+import time
+
+# First action
+execdiff.start_action_trace(workspace=".")
+with open("file1.txt", "w") as f:
+    f.write("content\n")
+execdiff.stop_action_trace()
+
+time.sleep(1)
+
+# Second action - modify and create
+execdiff.start_action_trace(workspace=".")
+with open("file1.txt", "w") as f:
+    f.write("updated content\n")
+with open("file2.txt", "w") as f:
+    f.write("new file\n")
+os.remove("file1.txt")
+execdiff.stop_action_trace()
+
+# Get latest summary
+summary = execdiff.last_action_summary(workspace=".")
+print(summary)
+```
+
+### Expected Output
+```
+Last AI Action:
+
+Created:
+- file2.txt
+
+Deleted:
+- file1.txt
+```
+
+---
+
 ## Cleanup
 
 After testing, remove test files:

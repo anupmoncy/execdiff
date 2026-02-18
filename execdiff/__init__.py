@@ -295,3 +295,73 @@ def _take_snapshot():
                 pass
     
     return file_dict
+
+
+def last_action_summary(workspace="."):
+    """
+    Read the latest action trace from .execdiff/logs/actions.jsonl and return a human-readable summary.
+    Returns:
+        str: Human-readable summary of the last AI action, or a message if no log exists.
+    """
+    log_file = os.path.join(workspace, ".execdiff", "logs", "actions.jsonl")
+    
+    if not os.path.exists(log_file):
+        return "No action history found."
+    
+    try:
+        # Read the last line
+        with open(log_file, "r") as f:
+            lines = f.readlines()
+            if not lines:
+                return "No action history found."
+            last_line = lines[-1].strip()
+        
+        entry = json.loads(last_line)
+        diff = entry.get("diff", {})
+        files = diff.get("files", {})
+        packages = diff.get("packages", {})
+        
+        # Build summary
+        summary_lines = ["Last AI Action:\n"]
+        
+        # Packages
+        pkg_installed = packages.get("installed", [])
+        if pkg_installed:
+            summary_lines.append("Installed:")
+            for pkg in pkg_installed:
+                summary_lines.append(f"- {pkg['name']}=={pkg['version']}")
+        
+        pkg_upgraded = packages.get("upgraded", [])
+        if pkg_upgraded:
+            summary_lines.append("Upgraded:")
+            for pkg in pkg_upgraded:
+                summary_lines.append(f"- {pkg['name']}: {pkg['before_version']} → {pkg['after_version']}")
+        
+        pkg_removed = packages.get("removed", [])
+        if pkg_removed:
+            summary_lines.append("Removed:")
+            for pkg in pkg_removed:
+                summary_lines.append(f"- {pkg['name']}")
+        
+        # Files
+        file_modified = files.get("modified", [])
+        if file_modified:
+            summary_lines.append("Modified:")
+            for f in file_modified:
+                summary_lines.append(f"- {f['path']}")
+        
+        file_created = files.get("created", [])
+        if file_created:
+            summary_lines.append("Created:")
+            for f in file_created:
+                summary_lines.append(f"- {f['path']}")
+        
+        file_deleted = files.get("deleted", [])
+        if file_deleted:
+            summary_lines.append("Deleted:")
+            for f in file_deleted:
+                summary_lines.append(f"- {f['path']}")
+        
+        return "\n".join(summary_lines) if len(summary_lines) > 1 else "No changes detected."
+    except Exception:
+        return "Error reading action history."

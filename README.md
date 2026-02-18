@@ -87,64 +87,88 @@ python test.py
 
 ---
 
-## Output
+## API Reference
+
+### `start_action_trace(workspace=".")`
+
+Start tracing a workspace for changes. Must be called before any operations.
+
+```python
+import execdiff
+
+execdiff.start_action_trace(workspace="./my_workspace")
+# ... your code that makes changes ...
+```
+
+### `stop_action_trace()`
+
+Stop tracing and return a diff of all changes detected. Automatically logs to `.execdiff/logs/actions.jsonl`.
+
+```python
+diff = execdiff.stop_action_trace()
+# Returns: {"files": {...}, "packages": {...}}
+```
+
+### `last_action_summary(workspace=".")`
+
+Get a human-readable summary of the last action trace without parsing JSON.
+
+```python
+summary = execdiff.last_action_summary(workspace=".")
+print(summary)
+```
+
+Output example:
+```
+Last AI Action:
+
+Created:
+- output.txt
+- data.json
+
+Installed:
+- requests==2.32.0
+```
+
+### `snapshot_workspace_state(workspace)`
+
+Take a full metadata snapshot of the workspace (files with mtime/size, installed packages).
+
+```python
+state = execdiff.snapshot_workspace_state(workspace=".")
+# Returns: {"files": {...}, "packages": {...}}
+```
+
+---
+
+## Output Format
+
+### Diff Structure
 
 ```json
 {
   "files": {
-    "created": [
-      {
-        "path": "workspace/test.txt",
-        "mtime": 1700000000.0
-      }
-    ],
-    "modified": [],
-    "deleted": []
+    "created": [{"path": "file.txt", "mtime": 123.45, "size": 1024}],
+    "modified": [{"path": "config.yaml", "before_mtime": 123, "after_mtime": 124, "before_size": 512, "after_size": 1024}],
+    "deleted": [{"path": "old_file.txt", "mtime": 123.45, "size": 256}]
   },
   "packages": {
-    "installed": []
+    "installed": [{"name": "requests", "version": "2.32.0"}],
+    "upgraded": [{"name": "django", "before_version": "3.2", "after_version": "4.0"}],
+    "removed": [{"name": "deprecated_lib", "version": "1.0"}]
   }
 }
 ```
 
----
+### Log File
 
-## Package Install Detection Example
-
-```python
-import execdiff
-import json
-import os
-
-os.makedirs("workspace", exist_ok=True)
-
-diff = execdiff.run_traced(
-    "pip install requests",
-    workspace="workspace"
-)
-
-print(json.dumps(diff, indent=2))
-```
-
----
-
-## Output
+All action traces are automatically persisted to `.execdiff/logs/actions.jsonl`:
 
 ```json
 {
-  "files": {
-    "created": [],
-    "modified": [],
-    "deleted": []
-  },
-  "packages": {
-    "installed": [
-      {
-        "name": "requests",
-        "version": "2.32.0"
-      }
-    ]
-  }
+  "timestamp": "2026-02-18T18:19:35.872838",
+  "workspace": "/path/to/workspace",
+  "diff": {...}
 }
 ```
 
@@ -165,3 +189,5 @@ ExecDiff can help AI coding tools:
 ## License
 
 MIT
+
+````
