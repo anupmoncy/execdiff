@@ -1,58 +1,53 @@
-# ExecDiff
+# Monitor AI Tool Workspace Changes
 
-See what AI-generated code will change before running it.
+AI coding tools like GitHub Copilot, Cursor, Replit AI, and agentic workflows install dependencies, modify configurations, and run setup commands in a project workspace.
 
----
+## Tracking Changes Beyond Git
 
-## Problem
+If GitHub Copilot implements a feature like API integration, it may:
 
-AI coding tools and agents today can:
+- Generate code.
+- Install libraries via the terminal.
+- Modify configuration files.
+- Create output files.
 
-- install dependencies  
-- create files  
-- modify configs  
-- run migrations  
-- delete project files  
+But when something breaks after execution, Git only shows code changes — not:
 
-All automatically.
+- newly installed packages
+- runtime-created files
+- deleted files
+- config updates done during execution
 
-When something breaks after execution, tools cannot answer:
+So it’s hard to tell what actually changed after an AI copilot action.
 
-> What exactly changed because of this action?
-
-Git tracks source code changes —  
-but it does **not** track execution side effects like:
-
-- newly installed Python packages  
-- runtime-created files  
-- deleted files  
-- modified configs  
-
-So tools often fall back to:
-
-> regenerate and try again
+Here’s how to capture everything automatically using VS Code (or any IDE with a terminal).
 
 ---
 
-## Solution
+## Step 1: Open Your Project in Your IDE
 
-ExecDiff allows tools to run AI-generated code and observe:
+Open your project folder in VS Code (or any IDE).
 
-> what changed in the workspace because of that execution
-
-It detects:
-
-- files created  
-- files modified  
-- files deleted  
-- Python packages installed  
-
-inside a specific workspace  
-during a specific execution window.
+Now open the integrated terminal: **Terminal → New Terminal**
 
 ---
 
-## Installation
+## Step 2 (Optional): Create a Project-Level Python Environment
+
+If you want installs isolated to this project:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Otherwise, you can skip this step.
+
+---
+
+## Step 3: Install ExecDiff from Terminal
+
+Run this inside the terminal:
 
 ```bash
 pip install execdiff
@@ -60,134 +55,106 @@ pip install execdiff
 
 ---
 
-## Example
+## Step 4: Start Tracing Before Using Your AI Copilot
 
-Create a test script:
+Create a new Python file in your project: `trace_ai.py` with the code below
 
 ```python
 import execdiff
-import json
-import os
+import time
 
-os.makedirs("workspace", exist_ok=True)
+print("\nStarting AI action trace...\n")
+execdiff.start_action_trace(workspace=".")
 
-diff = execdiff.run_traced(
-    "touch workspace/test.txt",
-    workspace="workspace"
-)
+input("Tracing is ON. Use your AI copilot now.\n\nPress ENTER here once it's done...")
 
-print(json.dumps(diff, indent=2))
+print("\nStopping trace...\n")
+execdiff.stop_action_trace()
+
+print("\nSummary of last AI action:\n")
+print(execdiff.last_action_summary())
 ```
 
-Run:
+Now run this from the terminal:
 
 ```bash
-python test.py
+python trace_ai.py
 ```
+
+Tracing has now started and you’ll see:
+
+```
+Starting AI action trace...
+
+Tracing is ON. Use your AI copilot now.
+Press ENTER here once it's done...
+```
+
+Leave this terminal running.
 
 ---
 
-## API Reference
+## Step 5: Use Your AI Copilot Normally
 
-### `start_action_trace(workspace=".")`
+Now continue development normally inside your IDE using any AI copilot.
 
-Start tracing a workspace for changes. Must be called before any operations.
+For example, ask:
 
-```python
-import execdiff
+> “Create a new feature for loading hello world into a pandas data frame and displaying it. Install the required libraries”
 
-execdiff.start_action_trace(workspace="./my_workspace")
-# ... your code that makes changes ...
+Your copilot may now:
+
+- generate new code
+- install dependencies
+- modify config files
+- create or delete files
+
+inside your project workspace.
+
+You don’t need to change anything in your workflow.
+
+Just let your AI copilot run whatever setup it needs internally.
+
+---
+
+## Step 6: Stop the Trace
+
+Once it’s done, come back to terminal and press Enter
+
+You’ll get:
+
 ```
-
-### `stop_action_trace()`
-
-Stop tracing and return a diff of all changes detected. Automatically logs to `.execdiff/logs/actions.jsonl`.
-
-```python
-diff = execdiff.stop_action_trace()
-# Returns: {"files": {...}, "packages": {...}}
-```
-
-### `last_action_summary(workspace=".")`
-
-Get a human-readable summary of the last action trace without parsing JSON.
-
-```python
-summary = execdiff.last_action_summary(workspace=".")
-print(summary)
-```
-
-Output example:
-```
-Last AI Action:
-
+Summary of last AI action:
 Created:
 - output.txt
 - data.json
-
+Modified:
+- settings.py
 Installed:
 - requests==2.32.0
 ```
 
-### `snapshot_workspace_state(workspace)`
+This includes:
 
-Take a full metadata snapshot of the workspace (files with mtime/size, installed packages).
+- filesystem changes
+- installed packages
+- deleted files
+- execution-time config updates
 
-```python
-state = execdiff.snapshot_workspace_state(workspace=".")
-# Returns: {"files": {...}, "packages": {...}}
-```
-
----
-
-## Output Format
-
-### Diff Structure
-
-```json
-{
-  "files": {
-    "created": [{"path": "file.txt", "mtime": 123.45, "size": 1024}],
-    "modified": [{"path": "config.yaml", "before_mtime": 123, "after_mtime": 124, "before_size": 512, "after_size": 1024}],
-    "deleted": [{"path": "old_file.txt", "mtime": 123.45, "size": 256}]
-  },
-  "packages": {
-    "installed": [{"name": "requests", "version": "2.32.0"}],
-    "upgraded": [{"name": "django", "before_version": "3.2", "after_version": "4.0"}],
-    "removed": [{"name": "deprecated_lib", "version": "1.0"}]
-  }
-}
-```
-
-### Log File
-
-All action traces are automatically persisted to `.execdiff/logs/actions.jsonl`:
-
-```json
-{
-  "timestamp": "2026-02-18T18:19:35.872838",
-  "workspace": "/path/to/workspace",
-  "diff": {...}
-}
-```
+All changes made during runtime.
 
 ---
 
-## Use Cases
+## Automatic Logs
 
-ExecDiff can help AI coding tools:
+Each AI-driven action is also stored inside:
 
-- preview changes before applying generated code  
-- detect unintended file or dependency changes  
-- explain execution impact to users  
-- debug failed automation  
-- build undo / rollback systems  
+```
+.execdiff/logs/actions.jsonl
+```
+
+Now get a running history of what changed in your project after every AI action.
 
 ---
 
-## License
-
-MIT
-
-````
+You can now continue using any AI copilot inside VS Code (or any IDE) normally while ExecDiff captures everything it changes behind the scenes.
