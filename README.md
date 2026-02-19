@@ -45,6 +45,7 @@ Otherwise, you can skip this step.
 
 ---
 
+
 ## Step 3: Install ExecDiff from Terminal
 
 Run this inside the terminal:
@@ -55,42 +56,23 @@ pip install execdiff
 
 ---
 
-## Step 4: Start Tracing Before Using Your AI Copilot
+## Step 4: Start Tracing Using the CLI
 
-Create a new Python file in your project: `trace_ai.py` with the code below
-
-```python
-import execdiff
-import time
-
-print("\nStarting AI action trace...\n")
-execdiff.start_action_trace(workspace=".")
-
-input("Tracing is ON. Use your AI copilot now.\n\nPress ENTER here once it's done...")
-
-print("\nStopping trace...\n")
-execdiff.stop_action_trace()
-
-print("\nSummary of last AI action:\n")
-print(execdiff.last_action_summary())
-```
-
-Now run this from the terminal:
+You can now use the built-in CLI to trace your workspace changes:
 
 ```bash
-python trace_ai.py
+execdiff trace
 ```
 
-Tracing has now started and you’ll see:
+You will see:
 
 ```
-Starting AI action trace...
-
 Tracing is ON. Use your AI copilot now.
-Press ENTER here once it's done...
 ```
 
-Leave this terminal running.
+Leave this terminal running while you use your AI copilot or make changes in your project.
+
+When you are done, press Enter in the terminal. ExecDiff will stop tracing and print a summary of all changes made during the session.
 
 ---
 
