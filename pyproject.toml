@@ -7,14 +7,13 @@ name = "execdiff"
 version = "0.0.9"
 description = "Passive execution tracing for file and package changes."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
 authors = [
 	{ name = "Anup Moncy", email = "n93181165@gmail.com" }
 ]
 requires-python = ">=3.8"
 
 classifiers = [
-	"License :: OSI Approved :: Apache Software License",
 	"Programming Language :: Python :: 3",
 	"Programming Language :: Python :: 3.8",
 	"Programming Language :: Python :: 3.9",
