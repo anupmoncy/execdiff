@@ -10,7 +10,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "trace":
-        print("Tracing is ON. Use your AI copilot now.")
+        print("Tracing is ON. Use your AI copilot now, hit enter once you are done with the work to see trace")
         execdiff.start_action_trace(workspace=".")
         input()
         execdiff.stop_action_trace()

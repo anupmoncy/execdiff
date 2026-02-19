@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "execdiff"
-version = "0.0.11"
+version = "0.0.12"
 description = "Passive execution tracing for file and package changes."
 readme = "README.md"
 license = "Apache-2.0"
