@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "execdiff"
-version = "0.0.6"
+version = "0.0.7"
 description = "Passive execution tracing for file and package changes."
 readme = "README.md"
 license = { file = "LICENSE" }
