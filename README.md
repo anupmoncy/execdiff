@@ -58,21 +58,50 @@ pip install execdiff
 
 ## Step 4: Start Tracing Using the CLI
 
-You can now use the built-in CLI to trace your workspace changes:
+
+## Live Progress & Interactive Review (New!)
+
+
+ExecDiff now supports live progress updates and interactive review while tracing, with a visually enhanced, colored, and symbol-rich table:
 
 ```bash
 execdiff trace
 ```
 
-You will see:
+
+You will see a live-updating table of file changes as they happen, with colors and symbols:
 
 ```
-Tracing is ON. Use your AI copilot now.
+┌──────────┬──────────┬──────────────────────┬──────────┬────────┬───────┐
+│   Time   │  Change  │       Target         │ ΔLines   │  Risk  │ Score │
+├──────────┼──────────┼──────────────────────┼──────────┼────────┼───────┤
+│ 12:01:05 │✏️ MODIFY │    settings.py       │  +14/-3  │⚠️ MED  │  42   │
+│ 12:01:10 │➕ CREATE │   newfile.py         │  +20/-0  │🛡️ LOW  │  20   │
+│ 12:01:15 │➖ DELETE │   oldfile.py         │  +0/-10  │💣 HIGH │  10   │
 ```
 
-Leave this terminal running while you use your AI copilot or make changes in your project.
+Legend:
+- ✏️ MODIFY: File modified
+- ➕ CREATE: File created
+- ➖ DELETE: File deleted
+- 🛡️ LOW, ⚠️ MED, 💣 HIGH: Risk levels (color-coded)
+- Colors: Green for added, red for removed, yellow for medium risk, etc.
 
-When you are done, press Enter in the terminal. ExecDiff will stop tracing and print a summary of all changes made during the session.
+**Features:**
+- See file changes live while tracing
+- Enriched metadata: lines/functions/imports/risk/score
+- Interactively review any change: type `r <n>` (e.g. `r 2`) to see a unified diff for change #2
+- Tracing continues while you review (non-blocking)
+
+**Commands:**
+- `r <n>` — Review change number n (shows before/after diff)
+- `Ctrl+C` — Stop tracing and exit
+
+All with zero external dependencies (pure Python stdlib).
+
+---
+
+When you are done, press `Ctrl+C` in the terminal. ExecDiff will stop tracing and exit cleanly.
 
 ---
 
