@@ -1,3 +1,6 @@
+__all__ = [
+    'TraceSession', 'ChangeEvent', 'ReviewHandler'
+]
 """
 live_trace.py
 Implements live progress update and review system for execdiff trace.
@@ -283,24 +286,27 @@ class TraceSession:
                         pass
                     time.sleep(0.5)
 
-        class ReviewHandler:
-            def __init__(self, session):
-                self.session = session
-            def review(self, n):
-                events = self.session.get_event_history()
-                if n < 1 or n > len(events):
-                    print('Invalid change number')
-                    return
-                event = events[n-1]
-                relpath = event.target
-                before_path = os.path.join(self.session.snapshots_dir, relpath + '.before')
-                after_path = os.path.join(self.session.workspace, relpath)
-                try:
-                    with open(before_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        before_lines = f.readlines()
-                    with open(after_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        after_lines = f.readlines()
-                    diff = difflib.unified_diff(before_lines, after_lines, fromfile=relpath+'.before', tofile=relpath, lineterm='')
-                    print(''.join(diff))
-                except Exception as e:
-                    print(f'Error during review: {e}')
+
+# --- ReviewHandler moved to top-level ---
+
+class ReviewHandler:
+    def __init__(self, session):
+        self.session = session
+    def review(self, n):
+        events = self.session.get_event_history()
+        if n < 1 or n > len(events):
+            print('Invalid change number')
+            return
+        event = events[n-1]
+        relpath = event.target
+        before_path = os.path.join(self.session.snapshots_dir, relpath + '.before')
+        after_path = os.path.join(self.session.workspace, relpath)
+        try:
+            with open(before_path, 'r', encoding='utf-8', errors='ignore') as f:
+                before_lines = f.readlines()
+            with open(after_path, 'r', encoding='utf-8', errors='ignore') as f:
+                after_lines = f.readlines()
+            diff = difflib.unified_diff(before_lines, after_lines, fromfile=relpath+'.before', tofile=relpath, lineterm='')
+            print(''.join(diff))
+        except Exception as e:
+            print(f'Error during review: {e}')
