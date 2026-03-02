@@ -59,6 +59,12 @@ def main():
         try:
             while True:
                 cmd = input()
+                if cmd.strip() == '':
+                    print("Stopping trace...")
+                    session.stop()
+                    trace_thread.join(timeout=1)
+                    print("Trace stopped.")
+                    break
                 if cmd.strip().startswith('r '):
                     try:
                         n = int(cmd.strip().split()[1])

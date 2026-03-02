@@ -145,18 +145,21 @@ class LiveConsole:
                         type_color = {'MODIFY': '\033[94m✏️ ', 'CREATE': '\033[92m➕', 'DELETE': '\033[91m➖'}.get(event['type'], '\033[0m')
                         risk_map = {'low': ('\033[92m🛡️ LOW\033[0m',), 'medium': ('\033[93m⚠️ MED\033[0m',), 'high': ('\033[91m💣 HIGH\033[0m',)}
                         risk_disp = risk_map.get(event['risk'].lower(), ('',))[0]
-                        # Lines coloring
+                        # Lines coloring and 0/0 display
                         lines_disp = event['lines']
-                        if '+' in lines_disp:
-                            lines_disp = lines_disp.replace('+', '\033[92m+').replace('/', '\033[0m/')
-                        if '-' in lines_disp:
-                            lines_disp = lines_disp.replace('-', '\033[91m-') + '\033[0m'
+                        if lines_disp in ['+0/-0', '+0/-0\033[0m']:
+                            lines_disp = '\033[90m(no content change)\033[0m'
+                        else:
+                            if '+' in lines_disp:
+                                lines_disp = lines_disp.replace('+', '\033[92m+').replace('/', '\033[0m/')
+                            if '-' in lines_disp:
+                                lines_disp = lines_disp.replace('-', '\033[91m-') + '\033[0m'
                         # Print row with box drawing
                         print(
                             f"│{event['time']:^10}│"
                             f"{type_color}{event['type']:^8}\033[0m │"
                             f"{event['target'][:20]:^22}│"
-                            f"{lines_disp:^10}│"
+                            f"{lines_disp:^18}│"
                             f"{risk_disp:^8}│"
                             f"\033[1m{event['intensity']:^7}\033[0m│"
                         )
