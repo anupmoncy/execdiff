@@ -47,6 +47,9 @@ class TraceSession:
         self.running = False
     def start(self):
         self.running = True
+        # Clear progress file at the start of each trace session
+        with open(self.progress_file, 'w', encoding='utf-8'):
+            pass
         # Start background thread for live console
         self.console = LiveConsole(self.progress_file, self.event_history, self.lock)
         self.console_thread = threading.Thread(target=self.console.run, daemon=True)
@@ -117,9 +120,37 @@ class LiveConsole:
         self.running = True
     def stop(self):
         self.running = False
+        # Print table bottom border and summary if header was printed
+        if hasattr(self, 'header_printed') and self.header_printed:
+            print('\033[1m' + '└' + '─'*10 + '┴' + '─'*10 + '┴' + '─'*22 + '┴' + '─'*18 + '┴' + '─'*8 + '┴' + '─'*7 + '┘\033[0m')
+        self.print_summary()
+
+    def print_summary(self):
+        # Print a summary of all changes
+        with self.lock:
+            events = [e for e in self.event_history if not e.target.startswith('.execdiff/')]
+        if not events:
+            print("No changes detected.")
+            return
+        print("\nSummary of changes:")
+        by_type = {'MODIFY': [], 'CREATE': [], 'DELETE': []}
+        for e in events:
+            by_type.get(e.type, []).append(e)
+        if by_type['CREATE']:
+            print("Created:")
+            for e in by_type['CREATE']:
+                print(f"- {e.target}")
+        if by_type['MODIFY']:
+            print("Modified:")
+            for e in by_type['MODIFY']:
+                print(f"- {e.target}")
+        if by_type['DELETE']:
+            print("Deleted:")
+            for e in by_type['DELETE']:
+                print(f"- {e.target}")
     def run(self):
         last_pos = 0
-        header_printed = False
+        self.header_printed = False
         header = (
             '\033[1m'  # Bold
             '┌' + '─'*10 + '┬' + '─'*10 + '┬' + '─'*22 + '┬' + '─'*10 + '┬' + '─'*8 + '┬' + '─'*7 + '┐\n'
@@ -138,9 +169,9 @@ class LiveConsole:
                         # Skip internal execdiff files
                         if event['target'].startswith('.execdiff/'):
                             continue
-                        if not header_printed:
+                        if not self.header_printed:
                             print(header)
-                            header_printed = True
+                            self.header_printed = True
                         # Color and symbol logic
                         type_color = {'MODIFY': '\033[94m✏️ ', 'CREATE': '\033[92m➕', 'DELETE': '\033[91m➖'}.get(event['type'], '\033[0m')
                         risk_map = {'low': ('\033[92m🛡️ LOW\033[0m',), 'medium': ('\033[93m⚠️ MED\033[0m',), 'high': ('\033[91m💣 HIGH\033[0m',)}
