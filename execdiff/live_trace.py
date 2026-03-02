@@ -55,6 +55,9 @@ class TraceSession:
         self.running = False
         self.console.stop()
     def enrich_and_log_change(self, relpath, before_path, after_path):
+        # Ignore internal execdiff files
+        if relpath.startswith('.execdiff/'):
+            return None
         # Read before and after
         with open(before_path, 'r', encoding='utf-8', errors='ignore') as f:
             before_lines = f.readlines()
@@ -95,6 +98,9 @@ class TraceSession:
             f.write(json.dumps(event.to_dict()) + '\n')
         return event
     def snapshot_before(self, relpath, src_path):
+        # Ignore internal execdiff files
+        if relpath.startswith('.execdiff/'):
+            return None
         dest = os.path.join(self.snapshots_dir, relpath + '.before')
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         shutil.copy2(src_path, dest)
@@ -113,14 +119,13 @@ class LiveConsole:
         self.running = False
     def run(self):
         last_pos = 0
-        # Box drawing header
+        header_printed = False
         header = (
             '\033[1m'  # Bold
             '┌' + '─'*10 + '┬' + '─'*10 + '┬' + '─'*22 + '┬' + '─'*10 + '┬' + '─'*8 + '┬' + '─'*7 + '┐\n'
             '│' + f"{'Time':^10}" + '│' + f"{'Change':^10}" + '│' + f"{'Target':^22}" + '│' + f"{'ΔLines':^10}" + '│' + f"{'Risk':^8}" + '│' + f"{'Score':^7}" + '│\n'
             '├' + '─'*10 + '┼' + '─'*10 + '┼' + '─'*22 + '┼' + '─'*10 + '┼' + '─'*8 + '┼' + '─'*7 + '┤\033[0m'
         )
-        print(header)
         while self.running:
             try:
                 with open(self.progress_file, 'r', encoding='utf-8') as f:
@@ -130,6 +135,12 @@ class LiveConsole:
                         if not line:
                             break
                         event = json.loads(line)
+                        # Skip internal execdiff files
+                        if event['target'].startswith('.execdiff/'):
+                            continue
+                        if not header_printed:
+                            print(header)
+                            header_printed = True
                         # Color and symbol logic
                         type_color = {'MODIFY': '\033[94m✏️ ', 'CREATE': '\033[92m➕', 'DELETE': '\033[91m➖'}.get(event['type'], '\033[0m')
                         risk_map = {'low': ('\033[92m🛡️ LOW\033[0m',), 'medium': ('\033[93m⚠️ MED\033[0m',), 'high': ('\033[91m💣 HIGH\033[0m',)}
