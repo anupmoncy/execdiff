@@ -1,5 +1,5 @@
 __all__ = [
-    'TraceSession', 'ChangeEvent', 'ReviewHandler'
+    'TraceSession', 'ChangeEvent', 'ReviewHandler', 'LiveConsole'
 ]
 """
 live_trace.py
